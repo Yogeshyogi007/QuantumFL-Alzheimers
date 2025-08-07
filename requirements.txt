@@ -1,0 +1,13 @@
+torch
+torchvision
+pandas
+numpy
+nibabel
+matplotlib
+scikit-learn
+tqdm
+flwr
+pysyft
+web3
+pennylane
+qiskit

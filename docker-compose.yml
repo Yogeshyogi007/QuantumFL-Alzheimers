@@ -1,0 +1,170 @@
+version: '3.8'
+
+services:
+  # Federated Learning Server
+  fl-server:
+    build: .
+    container_name: quantumfl-server
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+      - ./checkpoints:/app/checkpoints
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - FEDERATED_SERVER_URL=http://localhost:8000
+      - LOG_LEVEL=INFO
+    command: ["python", "federated_learning/server.py", "--num_clients", "5", "--rounds", "100"]
+    networks:
+      - quantumfl-network
+
+  # Federated Learning Client 1
+  fl-client-1:
+    build: .
+    container_name: quantumfl-client-1
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - CLIENT_ID=1
+      - SERVER_URL=http://fl-server:8000
+      - LOG_LEVEL=INFO
+    command: ["python", "federated_learning/client.py", "--client_id", "1", "--server_url", "http://fl-server:8000"]
+    depends_on:
+      - fl-server
+    networks:
+      - quantumfl-network
+
+  # Federated Learning Client 2
+  fl-client-2:
+    build: .
+    container_name: quantumfl-client-2
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - CLIENT_ID=2
+      - SERVER_URL=http://fl-server:8000
+      - LOG_LEVEL=INFO
+    command: ["python", "federated_learning/client.py", "--client_id", "2", "--server_url", "http://fl-server:8000"]
+    depends_on:
+      - fl-server
+    networks:
+      - quantumfl-network
+
+  # Federated Learning Client 3
+  fl-client-3:
+    build: .
+    container_name: quantumfl-client-3
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - CLIENT_ID=3
+      - SERVER_URL=http://fl-server:8000
+      - LOG_LEVEL=INFO
+    command: ["python", "federated_learning/client.py", "--client_id", "3", "--server_url", "http://fl-server:8000"]
+    depends_on:
+      - fl-server
+    networks:
+      - quantumfl-network
+
+  # Federated Learning Client 4
+  fl-client-4:
+    build: .
+    container_name: quantumfl-client-4
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - CLIENT_ID=4
+      - SERVER_URL=http://fl-server:8000
+      - LOG_LEVEL=INFO
+    command: ["python", "federated_learning/client.py", "--client_id", "4", "--server_url", "http://fl-server:8000"]
+    depends_on:
+      - fl-server
+    networks:
+      - quantumfl-network
+
+  # Federated Learning Client 5
+  fl-client-5:
+    build: .
+    container_name: quantumfl-client-5
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - CLIENT_ID=5
+      - SERVER_URL=http://fl-server:8000
+      - LOG_LEVEL=INFO
+    command: ["python", "federated_learning/client.py", "--client_id", "5", "--server_url", "http://fl-server:8000"]
+    depends_on:
+      - fl-server
+    networks:
+      - quantumfl-network
+
+  # Blockchain Node
+  blockchain-node:
+    build: .
+    container_name: quantumfl-blockchain
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./blockchain:/app/blockchain
+      - ./logs:/app/logs
+    environment:
+      - BLOCKCHAIN_NETWORK=testnet
+      - LOG_LEVEL=INFO
+    command: ["python", "blockchain/start_network.py", "--num_nodes", "3"]
+    networks:
+      - quantumfl-network
+
+  # TensorBoard for monitoring
+  tensorboard:
+    build: .
+    container_name: quantumfl-tensorboard
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./logs:/app/logs
+    command: ["tensorboard", "--logdir", "/app/logs", "--host", "0.0.0.0", "--port", "6006"]
+    networks:
+      - quantumfl-network
+
+  # Jupyter Notebook for development
+  jupyter:
+    build: .
+    container_name: quantumfl-jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./notebooks:/app/notebooks
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    command: ["jupyter", "lab", "--ip", "0.0.0.0", "--port", "8888", "--no-browser", "--allow-root", "--NotebookApp.token=''"]
+    networks:
+      - quantumfl-network
+
+networks:
+  quantumfl-network:
+    driver: bridge
+
+volumes:
+  data:
+  models:
+  logs:
+  checkpoints:
