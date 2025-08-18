@@ -284,8 +284,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Contact
 
-- **Author**: Yogesh Yogi
-- **Email**: your.email@example.com
+- **Author**: C.Yogesh
+- **Email**: yogeshyogi2077@gmail.com
 - **GitHub**: [@Yogeshyogi007](https://github.com/Yogeshyogi007)
 
 ## 📚 References
