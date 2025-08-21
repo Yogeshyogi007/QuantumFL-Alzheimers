@@ -11,3 +11,6 @@ pysyft
 web3
 pennylane
 qiskit
+flask
+Pillow
+opencv-python

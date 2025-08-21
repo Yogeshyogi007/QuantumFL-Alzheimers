@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Alzheimer's MRI Detection</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+	<style>
+		* { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+		body { margin: 0; background: #0b1020; color: #e2e8f0; }
+		.container { max-width: 920px; margin: 0 auto; padding: 32px 16px; }
+		header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+		h1 { font-size: 28px; margin: 0; font-weight: 700; letter-spacing: 0.2px; }
+		.subtitle { color: #94a3b8; margin-top: 6px; font-size: 14px; }
+		.grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+		@media (min-width: 900px) { .grid { grid-template-columns: 1.1fr 0.9fr; } }
+		.card { background: linear-gradient(180deg, #0e162b 0%, #0a1122 100%); border: 1px solid #1f2a44; border-radius: 12px; padding: 24px; }
+		label { display: block; margin-bottom: 8px; color: #cbd5e1; font-weight: 600; }
+		.input-row { display: flex; gap: 12px; align-items: center; }
+		input[type=file] { flex: 1; padding: 10px; background: #0b1324; border: 1px solid #1f2937; border-radius: 8px; color: #93c5fd; }
+		button { background: #5b8cff; color: #0b1020; border: 0; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; }
+		button:hover { filter: brightness(1.08); }
+		.result { margin-top: 20px; padding: 16px; border-radius: 12px; border: 1px solid #1f2a44; background: #0b1324; }
+		.pill { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: 0.3px; }
+		.pill-low { background: #0f5132; color: #d1fae5; border: 1px solid #14532d; }
+		.pill-high { background: #5e1220; color: #ffe4e6; border: 1px solid #7f1d1d; }
+		.error { margin-top: 16px; color: #fca5a5; }
+		.preview { display: flex; gap: 16px; align-items: center; margin-top: 14px; }
+		.preview-img { width: 160px; height: 160px; border-radius: 10px; border: 1px solid #1f2a44; background: #0b1324; object-fit: cover; }
+		.meta { color: #93a7c7; font-size: 13px; }
+		.footer { margin-top: 24px; font-size: 12px; color: #94a3b8; text-align: center; }
+		.muted { color: #94a3b8; font-size: 12px; }
+		.result-grid { display: grid; grid-template-columns: 180px 1fr; gap: 16px; align-items: center; }
+		@media (max-width: 560px) { .result-grid { grid-template-columns: 1fr; } }
+		.confbar { margin-top: 10px; width: 100%; height: 10px; border-radius: 999px; background: #10182e; border: 1px solid #1f2a44; overflow: hidden; }
+		.confbar-fill { height: 100%; }
+		.confbar-low { background: linear-gradient(90deg, #16a34a, #22c55e); }
+		.confbar-high { background: linear-gradient(90deg, #ef4444, #dc2626); }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<header>
+			<div>
+				<h1>Alzheimer's MRI Detection</h1>
+				<div class="subtitle">Upload an MRI image to get a prediction. Uses the best Classical CNN model.</div>
+			</div>
+		</header>
+
+		<div class="grid">
+			<div class="card">
+				<form method="post" enctype="multipart/form-data">
+					<label for="file">Upload MRI image (.img/.hdr/.gif/.jpg/.png)</label>
+					<div class="input-row">
+						<input id="file" name="file" type="file" accept=".img,.hdr,.gif,.jpg,.jpeg,.png" required />
+						<button type="submit">Predict</button>
+					</div>
+					<div class="muted" style="margin-top:8px;">Your image is processed as a normalized 128×128 grayscale slice for inference.</div>
+				</form>
+
+				{% if error %}
+					<div class="error">{{ error }}</div>
+				{% endif %}
+
+				{% if prediction %}
+					<div class="result">
+						<div class="result-grid">
+							{% if image_data_url %}
+								<img class="preview-img" src="{{ image_data_url }}" alt="MRI preview" />
+							{% endif %}
+							<div>
+								{% if filename %}
+									<div class="muted" style="margin-bottom:6px;">File: {{ filename }}</div>
+								{% endif %}
+								<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+									<div style="font-size:18px; font-weight:700; letter-spacing:0.2px;">Prediction</div>
+									{% if 'LOW' in prediction %}
+										<span class="pill pill-low">LOW RISK</span>
+									{% else %}
+										<span class="pill pill-high">HIGH RISK</span>
+									{% endif %}
+								</div>
+								<div class="meta" style="margin-top:8px;">Alzheimer's probability: <strong>{{ probability }}</strong> {% if probability_pct is not none %}(<strong>{{ probability_pct }}%</strong>){% endif %}</div>
+								<div class="confbar">
+									<div class="confbar-fill {% if 'LOW' in prediction %}confbar-low{% else %}confbar-high{% endif %}" data-width="{{ probability_pct|default(0, true) }}" style="width: 0%;"></div>
+								</div>
+								<script>
+									(function() {
+										var el = document.querySelector('.confbar-fill');
+										if (el && el.dataset && el.dataset.width) {
+											var w = parseFloat(el.dataset.width);
+											if (!isNaN(w)) { el.style.width = w + '%'; }
+										}
+									})();
+								</script>
+								<div class="muted" style="margin-top:8px;">A higher bar indicates higher Alzheimer's probability.</div>
+							</div>
+						</div>
+					</div>
+				{% endif %}
+			</div>
+
+			<div class="card">
+				<div style="font-weight:600; margin-bottom:8px;">About this model</div>
+				<div class="muted">• Best Classical CNN (99.81% validation on OASIS).<br/>• Inputs are middle slices normalized to [0,1] and resized to 128×128.<br/>• Inference runs on CPU/GPU automatically.</div>
+			</div>
+		</div>
+
+		<div class="footer">© 2025 Alzheimer’s MRI Detection • Research prototype</div>
+	</div>
+</body>
+</html>
