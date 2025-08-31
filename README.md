@@ -17,14 +17,15 @@ This project implements a quantum-inspired federated learning framework for Alzh
 QuantumFL-Alzheimers/
 ├── blockchain/              # Blockchain integration for data integrity
 ├── data/                   # Dataset storage
-│   ├── raw/               # Original dataset (excluded from git)
-│   └── preprocessed/      # Preprocessed data (excluded from git)
+│   ├── raw/               # Original dataset files
+│   └── preprocessed/      # Preprocessed data files
 ├── federated_learning/    # Federated learning implementation
 ├── inference/            # Model inference and prediction
 ├── models/              # Neural network architectures
 ├── preprocessing/        # Data preprocessing scripts
 ├── training/            # Training scripts and utilities
 ├── utils/               # Utility functions
+├── webapp/              # Web application frontend
 └── requirements.txt     # Python dependencies
 ```
 
@@ -33,9 +34,9 @@ QuantumFL-Alzheimers/
 ### Prerequisites
 
 - Python 3.8+
-- CUDA-compatible GPU (recommended)
-- 16GB+ RAM
-- 100GB+ free disk space for dataset
+- CUDA-compatible GPU (recommended for training)
+- 8GB+ RAM
+- 50GB+ free disk space
 
 ### Installation
 
@@ -48,7 +49,10 @@ QuantumFL-Alzheimers/
 2. **Create virtual environment:**
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   # On Windows:
+   venv\Scripts\activate
+   # On Linux/Mac:
+   source venv/bin/activate
    ```
 
 3. **Install dependencies:**
@@ -56,104 +60,91 @@ QuantumFL-Alzheimers/
    pip install -r requirements.txt
    ```
 
-## 📊 Dataset Setup
+## 📊 Dataset & Model Setup
 
-### Download OASIS Dataset
+### Option 1: Use Pre-trained Models & Preprocessed Data (Recommended)
 
-The project uses the OASIS (Open Access Series of Imaging Studies) dataset. Follow these steps to download and set up the dataset:
+For quick testing and inference, download our pre-trained models and preprocessed data:
 
-1. **Register for OASIS access:**
+**🔗 Download Links:**
+- **Pre-trained Model**: https://drive.google.com/file/d/1pXMqvbHra4ThWUW7Ndbj5T-Ti6FLuvsp/view?usp=sharing
+- **Preprocessed Data**: https://drive.google.com/drive/folders/1wIo2T3gp_gr-qJ9HGjSgQrpSxJG9Z6VA?usp=sharing
+
+**Setup Instructions:**
+1. Download the files from the links above
+2. Place the Pre-trained Model to `models/` directory
+3. Place the preprocessed data folder inside `data/` directory which will look like afterwards `data/preprocessed/`
+4. Skip to the [Inference](#-inference) section
+
+### Option 2: Full Dataset Setup (For Training)
+
+If you want to train the models from scratch:
+
+1. **Download OASIS Dataset:**
    - Visit: https://www.oasis-brains.org/
    - Create an account and request access
-   - Wait for approval (usually 24-48 hours)
+   - Download OASIS-1 Cross-Sectional Data (~80GB)
 
-2. **Download the dataset:**
+2. **Organize the data:**
    ```bash
-   # Create data directory
    mkdir -p data/raw
-   
-   # Download OASIS-1 Cross-Sectional Data
-   # You'll need to manually download from the OASIS website
-   # The dataset is approximately 80GB
-   ```
-
-3. **Extract and organize data:**
-   ```bash
    # Extract downloaded files to data/raw/
-   # The structure should be:
-   data/raw/
-   ├── disc1/
-   ├── disc2/
-   ├── ...
-   └── disc12/
    ```
 
-### Dataset Structure
-
-The OASIS dataset contains:
-- **416 subjects** aged 18-96
-- **Clinical dementia rating (CDR)** scores
-- **T1-weighted MRI scans**
-- **Demographic information**
-
-## 🔧 Preprocessing
-
-### Run Preprocessing Scripts
-
-1. **Preprocess MRI data:**
+3. **Run preprocessing:**
    ```bash
    python preprocessing/preprocess_mri.py --input_dir data/raw --output_dir data/preprocessed
    ```
 
-2. **Extract features:**
-   ```bash
-   python preprocessing/extract_features.py --data_dir data/preprocessed
-   ```
-
-3. **Prepare federated learning data:**
-   ```bash
-   python preprocessing/prepare_federated_data.py --data_dir data/preprocessed
-   ```
-
 ## 🧠 Training
 
-### Local Training
+### Local Training (Single Machine)
 
 ```bash
-python training/train_local.py --config configs/local_config.yaml
+python training/train.py --data_dir data/preprocessed --model_save_path models/local_model.pth
 ```
 
-### Federated Learning
+### Federated Learning (Multiple Clients)
 
-1. **Start central server:**
+1. **Start the federated learning server:**
    ```bash
-   python federated_learning/server.py --num_clients 5 --rounds 100
+   python federated_learning/fl_server.py --num_clients 3 --rounds 50
    ```
 
-2. **Start client nodes:**
+2. **Start client nodes (in separate terminals):**
    ```bash
    # Terminal 1
-   python federated_learning/client.py --client_id 1 --server_url http://localhost:8000
+   python federated_learning/fl_client.py --client_id 1 --server_url http://localhost:8000
    
-   # Terminal 2
-   python federated_learning/client.py --client_id 2 --server_url http://localhost:8000
+   # Terminal 2  
+   python federated_learning/fl_client.py --client_id 2 --server_url http://localhost:8000
    
-   # Repeat for additional clients
+   # Terminal 3
+   python federated_learning/fl_client.py --client_id 3 --server_url http://localhost:8000
    ```
 
 ## 🔍 Inference
 
-### Single Image Prediction
+### Command Line Inference
 
 ```bash
-python inference/predict.py --image_path path/to/mri_image.nii.gz --model_path models/best_model.pth
+python inference/predict.py --image_path path/to/mri_image.jpg --model_path models/best_model.pth
 ```
 
-### Batch Prediction
+### Web Application
 
-```bash
-python inference/batch_predict.py --data_dir data/test --output_dir results/predictions
-```
+1. **Start the web application:**
+   ```bash
+   cd webapp
+   python app.py
+   ```
+
+2. **Open your browser and go to:**
+   ```
+   http://localhost:5000
+   ```
+
+3. **Upload an MRI image and get predictions**
 
 ## 📈 Results
 
@@ -177,13 +168,7 @@ python inference/batch_predict.py --data_dir data/test --output_dir results/pred
 ### Start Blockchain Network
 
 ```bash
-python blockchain/start_network.py --num_nodes 3
-```
-
-### Verify Data Integrity
-
-```bash
-python blockchain/verify_data.py --data_hash <hash>
+python blockchain/blockchain_logger.py
 ```
 
 ## 🛠️ Configuration
@@ -192,30 +177,10 @@ python blockchain/verify_data.py --data_hash <hash>
 
 Create a `.env` file:
 ```env
-DATASET_PATH=data/raw
+DATASET_PATH=data/preprocessed
 MODEL_PATH=models/
 LOG_LEVEL=INFO
 CUDA_VISIBLE_DEVICES=0
-```
-
-### Training Configuration
-
-Edit `configs/training_config.yaml`:
-```yaml
-model:
-  architecture: "quantum_cnn"
-  num_qubits: 8
-  depth: 3
-
-training:
-  batch_size: 32
-  learning_rate: 0.001
-  epochs: 100
-  
-federated:
-  num_clients: 5
-  rounds: 100
-  aggregation: "fedavg"
 ```
 
 ## 📊 Monitoring
@@ -226,42 +191,13 @@ federated:
 tensorboard --logdir logs/ --port 6006
 ```
 
-### Blockchain Explorer
-
-```bash
-python blockchain/explorer.py --port 8001
-```
-
 ## 🧪 Testing
 
-### Run Unit Tests
+### Run Tests
 
 ```bash
 python -m pytest tests/ -v
 ```
-
-### Run Integration Tests
-
-```bash
-python tests/test_federated_learning.py
-python tests/test_blockchain_integration.py
-```
-
-## 📝 API Documentation
-
-### REST API
-
-Start the API server:
-```bash
-python api/server.py --port 8000
-```
-
-### API Endpoints
-
-- `POST /predict` - Single image prediction
-- `GET /model/status` - Model status
-- `POST /federated/join` - Join federated network
-- `GET /blockchain/verify` - Verify data integrity
 
 ## 🤝 Contributing
 
@@ -298,7 +234,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **⚠️ Important Notes:**
 
-- The large dataset folders (disc1-disc12) are excluded from this repository to keep it lightweight
-- Users must download the OASIS dataset separately from the official website
-- Ensure sufficient disk space (100GB+) for the complete dataset
-- GPU acceleration is recommended for optimal performance
+- For quick testing, use the pre-trained models and preprocessed data from the provided download links
+- The full dataset (~80GB) is only needed if you want to train models from scratch
+- GPU acceleration is recommended for optimal performance during training
+- The web application provides an easy-to-use interface for MRI analysis
