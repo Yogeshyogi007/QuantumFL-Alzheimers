@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Blockchain Logs</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+	<style>
+		* { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+		body { margin: 0; background: #0b1020; color: #e2e8f0; }
+		.container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+		.card { background: #0b1324; border: 1px solid #1f2a44; border-radius: 12px; padding: 20px; margin-top: 16px; }
+		.nav a { color: #93c5fd; margin-right: 16px; text-decoration: none; }
+		.table { width: 100%; border-collapse: collapse; }
+		.table th, .table td { border-bottom: 1px solid #1f2a44; padding: 8px; font-size: 13px; }
+		.badge { padding: 2px 6px; border-radius: 8px; background: #0e293d; color: #7dd3fc; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="nav">
+			<a href="/">Predict</a>
+			<a href="/dashboard">Dashboard</a>
+			<a href="/federated">Federated</a>
+			<a href="/blockchain">Blockchain</a>
+		</div>
+		<h2>Blockchain Update Logs</h2>
+		<div class="card">
+			{# Debug: show count #}
+			<p style="margin:0 0 8px 0; color:#94a3b8; font-size:12px;">Logs count: {{ logs|length }}</p>
+			{% if logs and logs|length > 0 %}
+			<table class="table">
+				<thead>
+					<tr><th>#</th><th>Hash</th><th>Accuracy</th><th>Hospital</th><th>Timestamp</th></tr>
+				</thead>
+				<tbody>
+				{% for row in logs %}
+					{% if row is sequence and row|length >= 4 %}
+						{% set h = row[0] %}
+						{% set accbp = row[1] %}
+						{% set hosp = row[2] %}
+						{% set ts = row[3] %}
+					{% else %}
+						{% set h = row.updateHash or row.hash %}
+						{% set accraw = row.accuracy or 0 %}
+						{% if accraw <= 1 %}{% set accbp = (accraw * 10000)|int %}
+						{% elif accraw <= 100 %}{% set accbp = (accraw * 100)|int %}
+						{% else %}{% set accbp = accraw|int %}{% endif %}
+						{% set hosp = row.hospitalId or row.hospital %}
+						{% set ts = row.timestamp or row.time %}
+					{% endif %}
+					<tr>
+						<td>{{ loop.index }}</td>
+						<td><span class="badge">{{ h }}</span></td>
+						<td>{{ (accbp/100)|round(2) }}%</td>
+						<td>{{ hosp }}</td>
+						<td>{{ ts }}</td>
+					</tr>
+				{% endfor %}
+				</tbody>
+			</table>
+			{% else %}
+			<p>No logs found. Ensure RPC_URL/CONTRACT_ADDRESS/CONTRACT_ABI_PATH are set.</p>
+			{% endif %}
+		</div>
+	</div>
+</body>
+</html>
+

@@ -11,6 +11,8 @@ pysyft
 web3
 pennylane
 qiskit
+qiskit-aer
 flask
 Pillow
 opencv-python
+requests

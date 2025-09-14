@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Hospital Dashboard</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+	<style>
+		* { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+		body { margin: 0; background: #0b1020; color: #e2e8f0; }
+		.container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+		.nav a { color: #93c5fd; margin-right: 16px; text-decoration: none; }
+		.card { background: #0b1324; border: 1px solid #1f2a44; border-radius: 12px; padding: 20px; margin-top: 16px; }
+		input[type=file], input[type=text] { width: 100%; padding: 10px; background: #0b1324; border: 1px solid #1f2937; border-radius: 8px; color: #93c5fd; }
+		button { background: #5b8cff; color: #0b1020; border: 0; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: 700; }
+		button:hover { filter: brightness(1.08); }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="nav">
+			<a href="/">Predict</a>
+			<a href="/dashboard">Dashboard</a>
+			<a href="/federated">Federated</a>
+			<a href="/blockchain">Blockchain</a>
+		</div>
+		<h2>Hospital Dashboard</h2>
+		<div class="card">
+			<h3>Upload Dataset</h3>
+			<p class="muted">Expected structure (either folder or ZIP):<br>data/&lt;hospital_id&gt;/raw/{ CONTROL/, ALZ/ } with MRI files inside each class folder.</p>
+			<form method="post" action="/upload_dataset" enctype="multipart/form-data">
+				<label>Hospital ID</label>
+				<input type="text" name="hospital_id" placeholder="hospital_1" required />
+				<div style="height:12px"></div>
+				<label>Upload Mode</label>
+				<div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+					<label><input type="radio" name="upload_mode" value="folder" checked /> Folder</label>
+					<label><input type="radio" name="upload_mode" value="zip" /> ZIP</label>
+				</div>
+				<div style="height:12px"></div>
+				<div id="folder-upload">
+					<label>Select dataset root folder</label>
+					<input type="file" id="folder" name="folder" webkitdirectory directory multiple />
+					<div class="muted">Place class folders inside the selected root: CONTROL/ and ALZ/</div>
+				</div>
+				<div id="zip-upload" style="display:none;">
+					<label>Upload ZIP file</label>
+					<input type="file" id="zipfile" name="zipfile" accept=".zip" />
+				</div>
+				<div style="margin-top:12px;"><button type="submit">Upload</button></div>
+			</form>
+		</div>
+		<div class="card">
+			<h3>Start Local Training</h3>
+			<form method="post" action="/start_training">
+				<label>Hospital ID</label>
+				<input type="text" name="hospital_id" placeholder="hospital_1" required />
+				<div style="height:8px"></div>
+				<label>Epochs</label>
+				<input type="text" name="epochs" value="1" />
+				<div style="height:8px"></div>
+				<label><input type="checkbox" name="use_quantum" value="1" /> Use Quantum model (if available)</label>
+				<div style="margin-top:8px;"><button type="submit">Start Training</button></div>
+			</form>
+		</div>
+		<div class="card">
+			<h3>Local Training Status</h3>
+			<div id="status">No jobs running.</div>
+		</div>
+	</div>
+	<script>
+		(function(){
+			function toggleMode(){
+				var mode = document.querySelector('input[name="upload_mode"]:checked').value;
+				document.getElementById('folder-upload').style.display = (mode==='folder')?'block':'none';
+				document.getElementById('zip-upload').style.display = (mode==='zip')?'block':'none';
+			}
+			Array.prototype.forEach.call(document.querySelectorAll('input[name="upload_mode"]'), function(r){
+				r.addEventListener('change', toggleMode);
+			});
+			toggleMode();
+			// Poll job status every 2s
+			function poll(){
+				// Get hospital_id from the training form specifically
+				var trainingForm = document.querySelector('form[action="/start_training"]');
+				var hidInput = trainingForm ? trainingForm.querySelector('input[name="hospital_id"]') : null;
+				var hid = hidInput ? hidInput.value.trim() : '';
+				
+				// Debug logging
+				console.log('Training form found:', !!trainingForm);
+				console.log('Hospital ID input found:', !!hidInput);
+				console.log('Hospital ID value:', hid);
+				
+				if (!hid) {
+					document.getElementById('status').textContent = 'Please enter a Hospital ID in the training form (Debug: form=' + !!trainingForm + ', input=' + !!hidInput + ')';
+					return;
+				}
+				
+				fetch('/job_status?hospital_id=' + encodeURIComponent(hid))
+					.then(function(r){ return r.json(); })
+					.then(function(j){ 
+						if (j.error) {
+							document.getElementById('status').textContent = 'Error: ' + j.error;
+						} else {
+							document.getElementById('status').textContent = j.status || 'No jobs running.';
+						}
+					})
+					.catch(function(e){ document.getElementById('status').textContent = 'Error: ' + e.message; });
+			}
+			setInterval(poll, 2000);
+			poll();
+		})();
+	</script>
+</body>
+</html>
+

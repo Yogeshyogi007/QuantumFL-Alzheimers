@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Federated Monitor</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+	<style>
+		* { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+		body { margin: 0; background: #0b1020; color: #e2e8f0; }
+		.container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+		.card { background: #0b1324; border: 1px solid #1f2a44; border-radius: 12px; padding: 20px; margin-top: 16px; }
+		.nav a { color: #93c5fd; margin-right: 16px; text-decoration: none; }
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="nav">
+			<a href="/">Predict</a>
+			<a href="/dashboard">Dashboard</a>
+			<a href="/federated">Federated</a>
+			<a href="/blockchain">Blockchain</a>
+		</div>
+		<h2>Federated Learning Monitor</h2>
+		<div class="card">
+			<p>Run server: <code>python QuantumFL-Alzheimers/federated_learning/fl_server.py --rounds 3</code></p>
+			<p>Run clients (3 terminals): <code>python QuantumFL-Alzheimers/federated_learning/fl_client.py --data_dir "path/to/hospitalX/preprocessed" --epochs 1 --batch_size 16</code></p>
+			<p>Status: live logs are visible in your terminals. This page can be extended to stream logs via websockets.</p>
+		</div>
+	</div>
+</body>
+</html>
+

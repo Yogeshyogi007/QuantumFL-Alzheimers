@@ -1,0 +1,20 @@
+[
+  {
+    "key": "local:hospital_1:BEFD85672EE8562A2A96AC7A80B4E7591ED168EA161A0FA5AB829EC902EBE7C8",
+    "updateHash": "BEFD85672EE8562A2A96AC7A80B4E7591ED168EA161A0FA5AB829EC902EBE7C8",
+    "accuracy": 0.9838,
+    "hospitalId": "hospital_1",
+    "storageUri": "file://models/hospital_1_best_quantum.pth",
+    "roundId": "local",
+    "timestamp": 1757608656588
+  },
+  {
+    "key": "local:hospital_2:a23601dfd56cafe7a07d624859650addaf8da25ec9975f071845b4bb07702a5c",
+    "updateHash": "a23601dfd56cafe7a07d624859650addaf8da25ec9975f071845b4bb07702a5c",
+    "accuracy": 5497,
+    "hospitalId": "hospital_2",
+    "storageUri": "file://C:/Users/91882/Desktop/Final Year Project/IBM Project/QuantumFL-Alzheimers/models/hospital_2_best_quantum.pth",
+    "roundId": "local",
+    "timestamp": 1757608912775
+  }
+]

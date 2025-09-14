@@ -3,16 +3,36 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from pathlib import Path
+import sys
+import os
+
+# Ensure project root on path for `utils` and `models` imports
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 from utils.dataset_loader import get_loader
 from models.cnn_model import AlzheimerCNN
+try:
+    from models.true_quantum_model import TrueQuantumHybridModel
+except Exception:
+    TrueQuantumHybridModel = None
+import hashlib
+from typing import Optional
+
+try:
+    from blockchain.blockchain_connector import BlockchainLogger
+except Exception:
+    BlockchainLogger = None
 
 class FlowerClient(fl.client.NumPyClient):
-    def __init__(self, model, data_dir, args):
+    def __init__(self, model, data_dir, args, blockchain: Optional[BlockchainLogger] = None, hospital_id: str = "HOSP"):
         self.model = model
         self.data_dir = data_dir
         self.args = args
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.train_loader = get_loader(data_dir, batch_size=args.batch_size)
+        self.blockchain = blockchain
+        self.hospital_id = hospital_id
     def get_parameters(self, config):
         return [val.cpu().numpy() for _, val in self.model.state_dict().items()]
     def set_parameters(self, parameters):
@@ -33,7 +53,20 @@ class FlowerClient(fl.client.NumPyClient):
                 loss = criterion(outputs, labels)
                 loss.backward()
                 optimizer.step()
-        return self.get_parameters(config={}), len(self.train_loader.dataset), {}
+        # After local training, compute hash of weights and optionally log to blockchain
+        flat = []
+        for _, val in self.model.state_dict().items():
+            flat.append(val.detach().cpu().numpy().tobytes())
+        digest = hashlib.sha256(b''.join(flat)).hexdigest()
+        metrics = {}
+        if self.blockchain is not None:
+            try:
+                acc_bp = int(10000)  # placeholder; accuracy is provided in evaluate
+                tx = self.blockchain.record_update(digest, acc_bp, self.hospital_id)
+                metrics["blockchain_tx"] = tx
+            except Exception as e:
+                metrics["blockchain_error"] = str(e)
+        return self.get_parameters(config={}), len(self.train_loader.dataset), metrics
     def evaluate(self, parameters, config):
         self.set_parameters(parameters)
         self.model.eval()
@@ -48,8 +81,8 @@ class FlowerClient(fl.client.NumPyClient):
         accuracy = correct / total
         return float(accuracy), len(self.train_loader.dataset), {"accuracy": float(accuracy)}
 
-def run_fl_client(model, data_dir, args):
-    client = FlowerClient(model, data_dir, args)
+def run_fl_client(model, data_dir, args, blockchain: Optional[BlockchainLogger] = None, hospital_id: str = "HOSP"):
+    client = FlowerClient(model, data_dir, args, blockchain=blockchain, hospital_id=hospital_id)
     fl.client.start_numpy_client(server_address="localhost:8080", client=client)
 
 if __name__ == "__main__":
@@ -61,5 +94,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
     base_dir = Path(__file__).resolve().parent.parent
     data_dir = Path(args.data_dir) if args.data_dir else base_dir / 'data' / 'preprocessed'
-    model = AlzheimerCNN()
-    run_fl_client(model, data_dir, args)
+    model = TrueQuantumHybridModel() if TrueQuantumHybridModel is not None and getattr(args, 'quantum', False) else AlzheimerCNN()
+    # Optional blockchain wiring via env vars
+    bc = None
+    if BlockchainLogger is not None:
+        import os
+        rpc = os.environ.get('RPC_URL')
+        addr = os.environ.get('CONTRACT_ADDRESS')
+        abi = os.environ.get('CONTRACT_ABI_PATH')
+        pk = os.environ.get('PRIVATE_KEY')
+        if rpc and addr and abi and pk:
+            try:
+                bc = BlockchainLogger(rpc, addr, Path(abi), pk)
+            except Exception:
+                bc = None
+    run_fl_client(model, data_dir, args, blockchain=bc, hospital_id=os.environ.get('HOSPITAL_ID', 'HOSP'))
